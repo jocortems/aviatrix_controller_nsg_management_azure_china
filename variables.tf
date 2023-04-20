@@ -45,51 +45,20 @@ variable "ha_enabled" {
     default = true
 }
 
-variable "aviatrix_gateway_azure_subscription_id" {
-    type = string
-    description = "Azure subscription GUID where Aviatrix Gateways will be deployed"
-    default = ""
-
-    validation {
-      condition     = can(regex("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$", var.aviatrix_gateway_azure_subscription_id))
-      error_message = "The value must be a valid GUID in the format"  
-    }
+variable "aviatrix_gateway_subscription_name" {
+  type = string
+  description = "Display Name of the Azure subscription where the Aviatrix Gateway public IP addresses will be created"
+  default = ""
 }
 
-variable "aviatrix_controller_azure_subscription_id" {
-    type = string
-    description = "Azure subscription GUID where Aviatrix Controller is deployed. Defaults to the value of variable aviatrix_gateway_azure_subscription_id"
-    default = ""
-
-    validation {
-      condition     = can(regex("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$", var.aviatrix_controller_azure_subscription_id)) || length(var.aviatrix_controller_azure_subscription_id) == 0
-      error_message = "The value must be a valid GUID in the format"  
-    }
-}
-
-variable "aviatrix_gateway_azure_tenant_id" {
-    type = string
-    description = "Azure AD Tenant GUID where Aviatrix Gateways will be deployed"
-
-    validation {
-      condition     = can(regex("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$", var.aviatrix_gateway_azure_tenant_id))
-      error_message = "The value must be a valid GUID in the format"  
-    }
-}
-
-variable "aviatrix_controller_azure_tenant_id" {
-    type = string
-    description = "Azure AD Tenant GUID where Aviatrix Controller is deployed. Defaults to the value of variable aviatrix_gateway_azure_tenant_id"
-    default = ""
-
-    validation {
-      condition     = can(regex("^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$", var.aviatrix_controller_azure_tenant_id)) || length(var.aviatrix_controller_azure_tenant_id) == 0
-      error_message = "The value must be a valid GUID in the format"  
-    }
+variable "aviatrix_controller_subscription_name" {
+  type = string
+  description = "Display Name of the Azure subscription where the Aviatrix Controller is created"
+  default = ""
 }
 
 locals {
-  azuread_controller_tenant_id = length(var.aviatrix_controller_azure_tenant_id) > 0 ? var.aviatrix_controller_azure_tenant_id : var.aviatrix_gateway_azure_tenant_id 
-  azure_controller_subscription_id = length(var.aviatrix_controller_azure_subscription_id) > 0 ? var.aviatrix_controller_azure_subscription_id : var.aviatrix_gateway_azure_subscription_id
+  gateway_subscription = length(var.aviatrix_gateway_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription if subscription.display_name == var.aviatrix_gateway_subscription_name][0] : data.azurerm_subscription.current
+  controller_subscription = length(var.aviatrix_controller_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription if subscription.display_name == var.aviatrix_controller_subscription_name][0] : local.gateway_subscription
   gateway_address = var.ha_enabled ? ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32", "${azurerm_public_ip.transit_gateway_ha_vip[0].ip_address}/32"] : ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32"]
 }

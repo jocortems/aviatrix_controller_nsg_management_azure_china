@@ -4,93 +4,32 @@
 
 ### Note:
 
-This Terraform module automates the creation of NSG rules to the Aviatrix Controller deployed in Azure China NSG to allow communication with Aviatrix Gateways. This is needed because Avitrix Controllers deployed in Azure China doesn't support Security Group Management; this makes deploying Aviatrix Gateways through automation using Terraform challenging, requiring users to manually add the public IP addresses of the gateways to the NSG attached to the controller.
+This Terraform module automates the creation of NSG rules in the NSG attached to an Aviatrix Controller deployed in Azure China to allow communication with Aviatrix Gateways. This is needed because Avitrix Controllers deployed in Azure China doesn't support Security Group Management; this makes deploying Aviatrix Gateways through automation using Terraform challenging, requiring users to manually add the public IP addresses of the gateways to the NSG attached to the controller before the gateway creation times out.
 
 This Terraform module:
 
 - Is limited to deployments in Azure China.
-- Supports Azure controller deployment with only 6.5 and above versions.
-- Creates an Aviatrix Controller in Azure using scale set and load balancer.
-- Creates an access account on the controller.
-- Creates storage account and container required for backup/function logs.
-- Enables backup to an Azure storage account in the controller.
-- Creates a KeyVault to safeguard secrets. 
-- Creates an Alert to check the loadbalancer health probes.
-- Creates an Azure funtion to manage failover event along with periodic backup if needed.
-- Creates a log analytics workspace required for Application Insights
+- Doesn't create any Aviatrix resources. It is intended to be used in conjunction with [mc-transit](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-transit/aviatrix/latest), [mc-spoke](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-spoke/aviatrix/latest) modules or Aviatrix Transit and Spoke gateway resources.
+- Supports Azure controller deployment with only 6.7 and above versions.
+- Creates one or two Standard Public IP addresses to be associated with the gateways.
+- Adds a security rule to the existing NSG associated with an Azure Controller deployed in China
 
-**NOTE**: Controller backup is only enabled the first time this code is run. If a terraform destroy is performed to make changes to the input parameters and then redeploy using terraform plan/apply backup won't be enabled. Make sure to remove terraform.tfstate and terraform.lock.hcl files and re-run terraform init before running terraform plan/apply to guarantee backup will be configured. The other option is to manually enable backup in subsequent runs. 
 
 ## Prerequisites
 
 1. [Terraform v0.13+](https://www.terraform.io/downloads.html) - execute terraform files
-2. [Python3.9](https://www.python.org/downloads/)
-3. [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=v4%2Cwindows%2Ccsharp%2Cportal%2Cbash)
-4. [Resource Providers](https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/resource-providers-and-types#register-resource-provider-1) mentioned below should be registered in the subscription:
-  ``` shell
-      Microsoft.Compute
-      Microsoft.Storage
-      Microsoft.Network
-      Microsoft.KeyVault
-      Microsoft.ManagedIdentity
-      Microsoft.insights
-      Microsoft.OperationalInsights
-      Microsoft.Web
-  ```
+
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_azuread"></a> [azuread](#provider\_azuread) | ~> 2.36 |
-| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 3.49 |
-| <a name="provider_null"></a> [null](#provider\_null) | \>= 2.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | 3.4.3 |
-| <a name="provider_http"></a> [http](#provider\_http) | 3.2.1 |
+| <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 3.52 |
 
-## Available Modules
-
-Module  | Description |
-| ------- | ----------- |
-|[aviatrix_controller_initialize](https://github.com/jocortems/azure_china_controller_ha/tree/main/aviatrix_controller_initialize) | Initializes the Aviatrix Controller in Azure China (setting admin email, setting admin password, upgrading controller version, and setting up access account, setting up backup to an azure storage account) |
 
 ## Procedures for Building and Initializing a Controller in Azure
 
-### 1. Create the Python virtual environment and install required dependencies
-
-Install Python3.9 virtual environment.
-
-``` shell
-sudo apt install python3.9-venv
-```
-
-Create the virtual environment.
-
-``` shell
-python3.9 -m venv venv
-```
-
-Activate the virtual environment.
-
-``` shell
-source venv/bin/activate
-```
-
-Install Python3.9-pip
-
-``` shell
-sudo apt install python3.9-distutils
-curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python3.9 get-pip.py
-```
-
-Install required dependencies.
-
-``` shell
-pip install -r requirements.txt
-```
-
-### 2. Authenticating to Azure
+### 1. Authenticating to Azure
 
 Set the environment in Azure CLI to Azure China:
 
@@ -130,51 +69,47 @@ export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
 ### 3. Applying Terraform configuration
 
 ```hcl
-module "aviatrix_controller_azure" {
-    source                                         = "github.com/jocortems/azure_china_controller_ha"
-    resource_group_name                            = "<RESOURCE GROUP NAME>"                     # Required; Creates a Resource Group with this name.
-    location                                       = "<AZURE REGION>"                    # Required; Creates all resources in this region/location.
-    avtx_service_principal_secret                  = var.avtx_service_principal_secret #Required; Azure AD SP object secret to be used to onboard Azure to Aviatrix Controller. Sensitive
-    avtx_service_principal_appid	      	         = var.avtx_service_principal_appid #Required; Azure AD SP object AppId to be used to onboard Azure to Aviatrix Controller. Sensitive
-    storage_account_name                           = "aviatrixstorage<random hex value>"                    # Optional; Creates Storage account with this name. Default = "aviatrixstorage<random hex value>"
-    key_vault_name                                 = "aviatrix-key-vault-<random hex value>"                          # Optional; Creates Key vault with this name. Default = "aviatrix-key-vault-<random hex value>"
-    virtual_network_name                           = "aviatrix-vnet"                    # Optional; Creates Virtual Network with this name. Default = "aviatrix-vnet"
-    virtual_network_cidr                           = "<VNET CIDR>"              # Optional; Creates Virtual Network with this address space. Default = "10.0.0.0/23"
-    subnet_name                                    = "controller-subnet"                             # Optional; Creates Subnet with this name. Default = "aviatrix-subnet"
-    subnet_cidr                                    = "<SUBNET CIDR>"                                # Optional; Creates Subnet with this cidr. Default = "10.0.0.0/24"
-    load_balancer_frontend_public_ip_name          = "aviatrix-lb-public-ip"              # Optional; Creates LoadBalancer Frontend IP with this name. Default = "aviatrix-lb-public-ip"
-    load_balancer_name                             = "aviatrix-lb"                       # Optional; Creates LoadBalancer with this name. Default = "aviatrix-lb"
-    load_balancer_frontend_name                    = "aviatrix-lb-frontend"              # Optional; Creates LoadBalancer Frontend Configurations with this name. Default = "aviatrix-lb-frontend"
-    load_balancer_controller_backend_pool_name     = "aviatrix-controller-backend"          # Optional; Creates LoadBalancer Backend Pool with this name. Default = "aviatrix-controller-backend"
-    load_balancer_controller_health_probe_name     = "aviatrix-controller-probe"          # Optional; Creates LoadBalancer Health Probe with this name. Default = "aviatrix-controller-probe"
-    load_balancer_controller_rule_name             = "aviatrix-controller-lb-rule"                  # Optional; Creates LoadBalancer Rule with this name. Default = "aviatrix-controller-lb-rule"
-    network_security_group_controller_name         = "aviatrix-controller-nsg"             # Optional; Creates Network Security Group with this name. Default = "aviatrix-controller-nsg"
-    aviatrix_controller_security_group_allowed_ips = []          # Optional; The IP address of the machine that runs this code doesn't need to be added to this variable, it is automatically retrieved using Terraform http provider
-    controller_virtual_machine_size                = "Standard_A4_v2"                         # Optional; Creates Scale Set with this size Virtual Machine. Default = "Standard_A4_v2"
-    scale_set_controller_name                      = "aviatrix-controller-scale-set"                  # Optional; Creates Scale Set with this name. Default = "aviatrix-controller-scale-set"
-    avx_access_account_name                        = "azure-account"        # Required; Creates an access account with this name in the Aviatrix Controller.
-    avx_account_email                              = "john@doe.com"                      # Required; Creates an access account with this email address in the Aviatrix Controller.
-    avx_controller_admin_email                     = "john@doe.com"                # Required; Adds this email address to admin account in the Aviatrix Controller.
-    avx_aviatrix_customer_id			   = var.avx_aviatrix_customer_id          # Required; Aviatrix Controller License Sensitive
-    avx_controller_admin_password                  = var.avx_controller_admin_password                             # Optional; Changes admin password to this password. Default = "<autogenerated value>". Sensitive
-    avx_controller_version                         = "latest"                         # Optional; Upgrades the controller to this version. Default = "latest"    
-    log_analytics_workspace_id                     = "/subscriptions/<SUBSCRIPTION ID>/resourceGroups/<RG NAME>/providers/Microsoft.OperationalInsights/workspaces/<WORKSPACE NAME>"   # Optional; if not specified a workspace is created. Log Analytics Workspace is required for Application Insights in Azure China    
-    log_analytics_workspace_retention_in_days      = 30     # Optional; Valid values are 30-730. Defaults to 30. Only used if log_analytics_workspace is not specified
-    log_analytics_workspace_daily_quota_gb         = 1      # Optional; Defaults to 1GB/day. Only used if log_analytics_workspace is not specified
-    application_insights_name                      = "controllerha-appinsights"                       # Optional; Creates Application Insights with this name. Default = "aviatrix-function-app-insights"
-    app_service_plan_name                          = "controllerha-appplan"                   # Optional; Creates App Service Plan with this name. Default = "aviatrix-function-app-sp"
-    function_app_name                              = "controllerha-functionapp"                       # Optional; Creates Function App with this name. Default = "aviatrix-controller-app-<random hex value>"
-    user_assigned_identity_name                    = "contorllerha-functionapp-identity"             # Optional; Creates a User Assigned Identity with this name. Default = "aviatrix-function-identity"
-    aviatrix_function_app_custom_role_name         = "controllerha-functionapp-role"                   # Optional; Creates a Custom Role with permissions for the User Assigned Identity. Default = "aviatrix-function-custom-role"
-    function_action_group_name                     = "controllerha-functionapp-ag"              # Optional; Creates an Action Group for triggering the Function App with this name. Default = "aviatrix-function-action-group"
-    notification_action_group_name                 = "controllerha-functionapp-ng"          # Optional; Creates an Action Group for notifying email with Function App results. Default = "aviatrix-notify-action-group"
-    enable_function_app_alerts                     = true/false                                     # Optional; Enable Function App Notifications for success, failure, exception. Default = false
-    az_support                                     = true/false                                     # Required; Set to true if the Azure region supports AZ's.
-    enable_multiple_backup                         = true/false                                     # Required; whether to enable multiple backups for Aviatrix Controller
-    disable_periodic_backup                        = true/false                                     # Optional; Enable Periodic backup function. Default = true
-    schedule                                       = "0 0 * * * *"                                 # Optional; Creates a backup every hour by default when disable_periodic_backup is set to false. Default = "0 0 * * * *"
+
+resource "azurerm_resource_group" "avx_transit_rg" {
+  name     = "avx-transit-rg"
+  location = "China North 3"
 }
 
+module "azure-gateway-nsg" {
+  source                                      = "github.com/jocortems/aviatrix_controller_nsg_management_azure_china"
+  resource_group_name                         = azurerm_resource_group.avx_transit_rg.name                      # Required. The name of the resource group where the Aviatrix Gateways will be deployed
+  gateway_name                                = "example-gw"                                                    # Required. This is used to derive the name for the Public IP addresses that will be used by the Aviatrix Gateway
+  region                                      = "China North 3"                                                 # Required. Azure China Region where the Aviatrix Gateways will be deployed
+  tags                = {                                                                                       # Optional. These tags are only for the public IP addresses that will be created. In addition to the specified tags here the following tags are added {avx-gw-association = format("%s-gw", var.gateway_name), avx-created-resource = "DO-NOT-DELETE"} 
+                          user = "jorge",
+                          environment = "testing"
+                        }
+  ha_enabled                                  = true/false                                                      # Optional. Defaults to true. If set to false only one Public IP address is created and must disable ha_gw when creating Aviatrix spoke or transit gateways              
+  aviatrix_controller_nsg_name                = "controller-nsg"                                                # Required. Name of the NSG associated with the Aviatrix Controller
+  aviatrix_controller_nsg_resource_group_name = "controller-nsg-rg"                                             # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
+  aviatrix_controller_nsg_rule_priority       = 300                                                             # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
+  aviatrix_gateway_subscription_name          = "Gateway Subscription"                                          # Optional. If this is not specified it defaults to the current subscription of the logged in user
+  aviatrix_controller_subscription_name       = "Controller Subscription"                                       # Optional. If this is not specified it defaults to the value of aviatrix_gateway_subscription_name
+}
+
+
+module "mc-transit" {
+  source                                      = "terraform-aviatrix-modules/mc-transit/aviatrix"
+  version                                     = "2.3.2"
+  name                                        = "avx-transit-vnet"
+  account                                     = "azure-account"
+  cloud                                       = "Azure"
+  region                                      = "China North 3"
+  az_support                                  = false
+  gw_name                                     = "example-gw"
+  resource_group                              = azurerm_resource_group.avx_transit_rg.name
+  cidr                                        = "172.16.0.0/23"
+  allocate_new_eip                            = false
+  ha_azure_eip_name_resource_group            = "${module.azure-gateway-nsg.azure_gateway_ha_vip_name}:${azurerm_resource_group.avx_transit_rg.name}"
+  azure_eip_name_resource_group               = "${module.azure-gateway-nsg.azure_gateway_vip_name}:${azurerm_resource_group.avx_transit_rg.name}"
+  eip                                         = module.azure-gateway-nsg.azure_gateway_vip_address
+  ha_eip                                      = module.azure-gateway-nsg.azure_gateway_ha_vip_address
+}
 ```
 
 ### Execute
@@ -183,39 +118,6 @@ module "aviatrix_controller_azure" {
 terraform init
 terraform apply --var-file=<terraform.tfvars>
 ````
-
-Additional Information:
-
-1. Total expected time for failover ~20 mins
-    - ~5 min for azure alert to get fired as controller unhealthy.
-    - ~15 min to deploy, initialize, restore the new controller.
-
-2. Make sure to enable the backup on the healthy controller prior to triggering the failover.
-
-3. Failover logs can be viewed in function monitor logs.
-
-4. [List](https://github.com/MicrosoftDocs/azure-docs/blob/main/articles/availability-zones/includes/availability-zone-regions-include.md) of regions that support availability zones for the az_support var.
-5. Formatted names of the region for location var, can also be gathered using command below
-    ```shell
-    az account list-locations -o table
-    ````
-
-6. Cron Timer [examples](https://docs.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=csharp#ncrontab-examples)
-
-Known Caveat :
-
-1. Function Timeout error can occur during the restore process. In case of this error please login to the new controller to validate if the backup has been restored successfully. 
-![ScreenShot](./Restore-error.png)
-
-2. Failover may or may not be triggered when instance is stopped manually. As per azure, this inconsistent behavior is technically by design when manual auto scale feature is used in azure virtual machine scale set.
-
-3. Run ``` python -m pip install -–upgrade pip```, if below error occurs during dependencies installation.
-![ScreenShot](./Pip-error.png)
-
-Note:
-
-Alert will not be triggered when instance is deleted. It will only be triggered when loadbalancer health checks are failed.
-To test the failover, insert a deny rule on controller SG by blocking https traffic from Azure load balancer(sevice tag).
 
 ## **Disclaimer**:
 

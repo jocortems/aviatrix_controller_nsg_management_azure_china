@@ -1,3 +1,9 @@
+data "azurerm_subscriptions" "available" {
+}
+
+data "azurerm_subscription" "current" {
+}
+
 resource "azurerm_public_ip" "transit_gateway_vip" {
   provider            = azurerm.aviatrix-gateways
   name                = format("%s-vip", var.gateway_name)

@@ -12,8 +12,7 @@ resource "azurerm_resource_group" "gateway_resource_group" {
 
     lifecycle {
     ignore_changes = [
-      tags["avx-gw-association"],
-      tags["avx-created-resource"]
+      tags
     ]
   }
 
@@ -38,8 +37,7 @@ resource "azurerm_public_ip" "transit_gateway_vip" {
   lifecycle {
     create_before_destroy = true
     ignore_changes = [
-      tags["avx-gw-association"],
-      tags["avx-created-resource"]
+      tags
     ]
   }
 
@@ -64,8 +62,7 @@ resource "azurerm_public_ip" "transit_gateway_ha_vip" {
   lifecycle {
     create_before_destroy = true    
     ignore_changes = [
-      tags["avx-gw-association"],
-      tags["avx-created-resource"]
+      tags
     ]
   }
 

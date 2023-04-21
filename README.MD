@@ -68,6 +68,8 @@ export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
 
 ### 3. Applying Terraform configuration
 
+> Note: The public IP addresses, VNET and Gateways must all reside in the same Resource Group. If you are deploying Spoke Gateways to an existing VNET set parameter "use_existing_resource_group" to true and use the resource group name of the VNET
+
 ```hcl
 
 module "azure-gateway-nsg" {

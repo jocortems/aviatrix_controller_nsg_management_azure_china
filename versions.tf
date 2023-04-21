@@ -12,7 +12,11 @@ provider azurerm {
     tenant_id = local.gateway_subscription.tenant_id
     subscription_id = local.gateway_subscription.subscription_id
     environment = "china"
-    features {}
+    features {
+      resource_group {
+        prevent_deletion_if_contains_resources = true
+    }
+    }
 }
 
 provider azurerm {

@@ -98,7 +98,7 @@ module "mc-transit" {
   region                                      = "China North 3"
   az_support                                  = false
   gw_name                                     = "example-gw"
-  resource_group                              = module.azure-gateway-nsg.gateway_resource_group.name
+  resource_group                              = module.azure-gateway-nsg.gateway_resource_group
   cidr                                        = "172.16.0.0/23"
   allocate_new_eip                            = false
   ha_azure_eip_name_resource_group            = format("%s:%s", module.azure-gateway-nsg.gateway_ha_vip.name, module.azure-gateway-nsg.gateway_ha_vip.resource_group_name)

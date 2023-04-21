@@ -70,26 +70,22 @@ export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
 
 ```hcl
 
-resource "azurerm_resource_group" "avx_transit_rg" {
-  name     = "avx-transit-rg"
-  location = "China North 3"
-}
-
 module "azure-gateway-nsg" {
   source                                      = "github.com/jocortems/aviatrix_controller_nsg_management_azure_china"
-  resource_group_name                         = azurerm_resource_group.avx_transit_rg.name                      # Required. The name of the resource group where the Aviatrix Gateways will be deployed
-  gateway_name                                = "example-gw"                                                    # Required. This is used to derive the name for the Public IP addresses that will be used by the Aviatrix Gateway
-  region                                      = "China North 3"                                                 # Required. Azure China Region where the Aviatrix Gateways will be deployed
-  tags                = {                                                                                       # Optional. These tags are only for the public IP addresses that will be created. In addition to the specified tags here the following tags are added {avx-gw-association = format("%s-gw", var.gateway_name), avx-created-resource = "DO-NOT-DELETE"} 
+  gateway_resource_group                      = var.gateway_resource_group        # Required. The name of the resource group where the Aviatrix Gateways will be deployed
+  use_existing_resource_group                 = true/false                        # Optional. Defaults to false. Whether to create a new resource group or use an existing one
+  gateway_name                                = "example-gw"                      # Required. This is used to derive the name for the Public IP addresses that will be used by the Aviatrix Gateway
+  gateway_region                              = "China North 3"                   # Required. Azure China Region where the Aviatrix Gateways will be deployed
+  tags                = {                                                         # Optional. These tags are only for the public IP addresses that will be created. In addition to the specified tags here the following tags are added {avx-gw-association = format("%s-gw", var.gateway_name), avx-created-resource = "DO-NOT-DELETE"} 
                           user = "jorge",
                           environment = "testing"
                         }
-  ha_enabled                                  = true/false                                                      # Optional. Defaults to true. If set to false only one Public IP address is created and must disable ha_gw when creating Aviatrix spoke or transit gateways              
-  aviatrix_controller_nsg_name                = "controller-nsg"                                                # Required. Name of the NSG associated with the Aviatrix Controller
-  aviatrix_controller_nsg_resource_group_name = "controller-nsg-rg"                                             # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
-  aviatrix_controller_nsg_rule_priority       = 300                                                             # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
-  aviatrix_gateway_subscription_name          = "Gateway Subscription"                                          # Required. Display Name of the subscription where the Aviatrix Gateways will be deployed
-  aviatrix_controller_subscription_name       = "Controller Subscription"                                       # Optional. If this is not specified it defaults to the value of aviatrix_gateway_subscription_name
+  ha_enabled                                  = true/false                         # Optional. Defaults to true. If set to false only one Public IP address is created and must disable ha_gw when creating Aviatrix spoke or transit gateways              
+  controller_nsg_name                         = "controller-nsg"                   # Required. Name of the NSG associated with the Aviatrix Controller
+  controller_nsg_resource_group_name          = "controller-nsg-rg"                # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
+  controller_nsg_rule_priority                = 300                                # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
+  gateway_subscription_name                   = "Gateway Subscription"             # Required. Display Name of the subscription where the Aviatrix Gateways will be deployed
+  controller_subscription_name                = "Controller Subscription"          # Optional. If this is not specified it defaults to the value of aviatrix_gateway_subscription_name
 }
 
 
@@ -102,13 +98,13 @@ module "mc-transit" {
   region                                      = "China North 3"
   az_support                                  = false
   gw_name                                     = "example-gw"
-  resource_group                              = azurerm_resource_group.avx_transit_rg.name
+  resource_group                              = module.azure-gateway-nsg.gateway_resource_group.name
   cidr                                        = "172.16.0.0/23"
   allocate_new_eip                            = false
-  ha_azure_eip_name_resource_group            = "${module.azure-gateway-nsg.azure_gateway_ha_vip_name}:${azurerm_resource_group.avx_transit_rg.name}"
-  azure_eip_name_resource_group               = "${module.azure-gateway-nsg.azure_gateway_vip_name}:${azurerm_resource_group.avx_transit_rg.name}"
-  eip                                         = module.azure-gateway-nsg.azure_gateway_vip_address
-  ha_eip                                      = module.azure-gateway-nsg.azure_gateway_ha_vip_address
+  ha_azure_eip_name_resource_group            = format("%s:%s", module.azure-gateway-nsg.gateway_ha_vip.name, module.azure-gateway-nsg.gateway_ha_vip.resource_group_name)
+  azure_eip_name_resource_group               = format("%s:%s", module.azure-gateway-nsg.gateway_vip.name, module.azure-gateway-nsg.gateway_vip.resource_group_name)
+  eip                                         = module.azure-gateway-nsg.gateway_vip.ip_address
+  ha_eip                                      = module.azure-gateway-nsg.gateway_vip.ip_address
 }
 ```
 

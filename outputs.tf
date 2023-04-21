@@ -1,15 +1,11 @@
-output "azure_gateway_vip_address" {
-    value = azurerm_public_ip.transit_gateway_vip.ip_address
+output "gateway_vip" {
+    value = azurerm_public_ip.transit_gateway_vip
 }
 
-output "azure_gateway_ha_vip_address" {
-    value = var.ha_enabled ? azurerm_public_ip.transit_gateway_ha_vip[0].ip_address : null
+output "gateway_ha_vip" {
+    value = var.ha_enabled ? azurerm_public_ip.transit_gateway_ha_vip[0] : null
 }
 
-output "azure_gateway_vip_name" {
-    value = azurerm_public_ip.transit_gateway_vip.name
-}
-
-output "azure_gateway_ha_vip_name" {
-    value = var.ha_enabled ? azurerm_public_ip.transit_gateway_ha_vip[0].name : null
+output "gateway_resource_group" {
+    value = var.use_existing_resource_group ? var.gateway_resource_group : azurerm_resource_group.gateway_resource_group[0].name
 }

@@ -58,7 +58,7 @@ variable "aviatrix_controller_subscription_name" {
 }
 
 locals {
-  gateway_subscription = length(var.aviatrix_gateway_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription if subscription.display_name == var.aviatrix_gateway_subscription_name][0] : data.azurerm_subscription.current
+  gateway_subscription = [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription if subscription.display_name == var.aviatrix_gateway_subscription_name][0]
   controller_subscription = length(var.aviatrix_controller_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription if subscription.display_name == var.aviatrix_controller_subscription_name][0] : local.gateway_subscription
   gateway_address = var.ha_enabled ? ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32", "${azurerm_public_ip.transit_gateway_ha_vip[0].ip_address}/32"] : ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32"]
 }

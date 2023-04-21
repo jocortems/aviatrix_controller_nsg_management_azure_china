@@ -9,7 +9,7 @@ This Terraform module automates the creation of NSG rules in the NSG attached to
 This Terraform module:
 
 - Is limited to deployments in Azure China.
-- Doesn't create any Aviatrix resources. It is intended to be used in conjunction with [mc-transit](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-transit/aviatrix/latest), [mc-spoke](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-spoke/aviatrix/latest) modules or Aviatrix Transit and Spoke gateway resources.
+- Doesn't create any Aviatrix resources. It is intended to be used in conjunction with [mc-transit](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-transit/aviatrix/latest), [mc-spoke](https://registry.terraform.io/modules/terraform-aviatrix-modules/mc-spoke/aviatrix/latest) modules, Aviatrix Transit or Spoke gateway resources.
 - Supports Azure controller deployment with only 6.7 and above versions.
 - Creates one or two Standard Public IP addresses to be associated with the gateways.
 - Adds a security rule to the existing NSG associated with an Azure Controller deployed in China
@@ -88,7 +88,7 @@ module "azure-gateway-nsg" {
   aviatrix_controller_nsg_name                = "controller-nsg"                                                # Required. Name of the NSG associated with the Aviatrix Controller
   aviatrix_controller_nsg_resource_group_name = "controller-nsg-rg"                                             # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
   aviatrix_controller_nsg_rule_priority       = 300                                                             # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
-  aviatrix_gateway_subscription_name          = "Gateway Subscription"                                          # Optional. If this is not specified it defaults to the current subscription of the logged in user
+  aviatrix_gateway_subscription_name          = "Gateway Subscription"                                          # Required. Display Name of the subscription where the Aviatrix Gateways will be deployed
   aviatrix_controller_subscription_name       = "Controller Subscription"                                       # Optional. If this is not specified it defaults to the value of aviatrix_gateway_subscription_name
 }
 

@@ -27,7 +27,7 @@ This Terraform module:
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | ~> 3.52 |
 
 
-## Procedures for Building and Initializing a Controller in Azure
+## Procedures for Running this Module
 
 ### 1. Authenticating to Azure
 
@@ -66,7 +66,7 @@ export ARM_SUBSCRIPTION_ID="00000000-0000-0000-0000-000000000000"
 export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
 ```
 
-### 3. Applying Terraform configuration
+### 2. Applying Terraform configuration
 
 > Note: The public IP addresses, VNET and Gateways must all reside in the same Resource Group. If you are deploying Spoke Gateways to an existing VNET set parameter "use_existing_resource_group" to true and use the resource group name of the VNET
 

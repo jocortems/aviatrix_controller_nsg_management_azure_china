@@ -86,8 +86,8 @@ module "azure-gateway-nsg" {
   controller_nsg_name                         = "controller-nsg"                   # Required. Name of the NSG associated with the Aviatrix Controller
   controller_nsg_resource_group_name          = "controller-nsg-rg"                # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
   controller_nsg_rule_priority                = 300                                # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
-  gateway_subscription_name                   = "Gateway Subscription"             # Required. Display Name of the subscription where the Aviatrix Gateways will be deployed
-  controller_subscription_name                = "Controller Subscription"          # Optional. If this is not specified it defaults to the value of aviatrix_gateway_subscription_name
+  gateway_subscription_name                   = "Gateway Subscription"             # Optional. Default current subscription ID of logged in user. Display Name of the subscription where the Aviatrix Gateways will be deployed. 
+  controller_subscription_name                = "Controller Subscription"          # Optional. Default aviatrix_gateway_subscription_name. Display Name of the subscrition where Aviatrix Controller is deployed
 }
 
 

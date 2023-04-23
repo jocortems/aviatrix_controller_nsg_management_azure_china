@@ -77,7 +77,7 @@ resource "azurerm_public_ip" "transit_gateway_ha_vip" {
 
 resource "azurerm_network_security_rule" "avx_controller_allow_gw" {
   provider                    = azurerm.aviatrix-controller
-  name                        = format("%sgwInboundRule", var.gateway_name)
+  name                        = format("azure-avx-%sgw", var.gateway_name)
   resource_group_name         = var.controller_nsg_resource_group_name
   network_security_group_name = var.controller_nsg_name
   access                      = "Allow"
@@ -88,5 +88,5 @@ resource "azurerm_network_security_rule" "avx_controller_allow_gw" {
   destination_port_range      = "443"
   source_address_prefixes     = local.gateway_address
   destination_address_prefix  = "*"
-  description                 = "Aviatrix GW name"
+  description                 = "Allow access to Azure Avaitrix Gateways ${var.gateway_name} and ${var.gateway_name}-hagw"
 }

@@ -9,8 +9,8 @@ terraform {
 
 provider azurerm {
     alias = "aviatrix-gateways"
-    tenant_id = local.gateway_subscription.tenant_id
-    subscription_id = local.gateway_subscription.subscription_id
+    tenant_id = local.gateway_tenant_id
+    subscription_id = local.gateway_subscription_id
     environment = "china"
     features {
       resource_group {
@@ -21,8 +21,8 @@ provider azurerm {
 
 provider azurerm {
     alias = "aviatrix-controller"
-    tenant_id = local.controller_subscription.tenant_id
-    subscription_id = local.controller_subscription.subscription_id
+    tenant_id = local.controller_tenant_id
+    subscription_id = local.controller_subscription_id
     environment = "china"
     features {}
 }

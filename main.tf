@@ -11,9 +11,7 @@ resource "azurerm_resource_group" "gateway_resource_group" {
     location = var.gateway_region
 
     lifecycle {
-    ignore_changes = [
-      all
-    ]
+    ignore_changes = all
   }
 
   tags = merge(
@@ -36,9 +34,7 @@ resource "azurerm_public_ip" "transit_gateway_vip" {
 
   lifecycle {
     create_before_destroy = true
-    ignore_changes = [
-      all
-    ]
+    ignore_changes = all
   }
 
   tags = merge(
@@ -61,9 +57,7 @@ resource "azurerm_public_ip" "transit_gateway_ha_vip" {
 
   lifecycle {
     create_before_destroy = true    
-    ignore_changes = [
-      all
-    ]
+    ignore_changes = all
   }
 
   tags = merge(

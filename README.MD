@@ -72,7 +72,27 @@ export ARM_TENANT_ID="00000000-0000-0000-0000-000000000000"
 
 ```hcl
 
+provider azurerm {
+    alias = "gateways"
+    tenant_id = "12345678-abcd-abcd-abcd-1234567890ab"
+    subscription_id = "12345678-abcd-abcd-abcd-1234567890ab"
+    environment = "china"
+    features {}
+}
+
+provider azurerm {
+    alias = "controller"
+    tenant_id = "12345678-abcd-abcd-abcd-1234567890ab"
+    subscription_id = "12345678-abcd-abcd-abcd-1234567890ab"
+    environment = "china"
+    features {}
+}
+
 module "azure-gateway-nsg" {
+  providers = {
+    azurerm.gateways =azurerm.gateways
+    azurerm.controller = azurerm.controller
+  }
   source                                      = "github.com/jocortems/aviatrix_controller_nsg_management_azure_china"
   gateway_resource_group                      = var.gateway_resource_group        # Required. The name of the resource group where the Aviatrix Gateways will be deployed
   use_existing_resource_group                 = true/false                        # Optional. Defaults to false. Whether to create a new resource group or use an existing one
@@ -86,8 +106,6 @@ module "azure-gateway-nsg" {
   controller_nsg_name                         = "controller-nsg"                   # Required. Name of the NSG associated with the Aviatrix Controller
   controller_nsg_resource_group_name          = "controller-nsg-rg"                # Required. Name of the resource group where the NSG associated with the Aviatrix Controller is deployed
   controller_nsg_rule_priority                = 300                                # Required. This number must be unique. Before running this module verify the priority number is available in the NSG associated with the Aviatrix Controller
-  gateway_subscription_name                   = "Gateway Subscription"             # Optional. Default current subscription ID of logged in user. Display Name of the subscription where the Aviatrix Gateways will be deployed. 
-  controller_subscription_name                = "Controller Subscription"          # Optional. Default aviatrix_gateway_subscription_name. Display Name of the subscrition where Aviatrix Controller is deployed
 }
 
 

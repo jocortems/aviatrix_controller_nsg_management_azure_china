@@ -51,22 +51,6 @@ variable "ha_enabled" {
     default = true
 }
 
-variable "gateway_subscription_name" {
-  type = string
-  description = "Display Name of the Azure subscription where the Aviatrix Gateway public IP addresses will be created"
-  default = ""
-}
-
-variable "controller_subscription_name" {
-  type = string
-  description = "Display Name of the Azure subscription where the Aviatrix Controller is created"
-  default = ""
-}
-
 locals {
-  controller_subscription_id = length(var.controller_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription.subscription_id if subscription.display_name == var.controller_subscription_name][0] : local.gateway_subscription_id
-  controller_tenant_id = length(var.controller_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription.tenant_id if subscription.display_name == var.controller_subscription_name][0] : local.gateway_tenant_id
-  gateway_subscription_id = length(var.gateway_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription.subscription_id if subscription.display_name == var.gateway_subscription_name][0] : data.azurerm_subscription.current.subscription_id
-  gateway_tenant_id = length(var.gateway_subscription_name) > 0 ? [for subscription in data.azurerm_subscriptions.available.subscriptions : subscription.tenant_id if subscription.display_name == var.gateway_subscription_name][0] : data.azurerm_subscription.current.tenant_id
   gateway_address = var.ha_enabled ? ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32", "${azurerm_public_ip.transit_gateway_ha_vip[0].ip_address}/32"] : ["${azurerm_public_ip.transit_gateway_vip.ip_address}/32"]
 }

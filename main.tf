@@ -1,14 +1,8 @@
-data "azurerm_subscriptions" "available" {
-}
-
-data "azurerm_subscription" "current" {
-}
-
 resource "azurerm_resource_group" "gateway_resource_group" {
-    count = var.use_existing_resource_group ? 0 : 1
-    provider            = azurerm.aviatrix-gateways
-    name = var.gateway_resource_group
-    location = var.gateway_region
+    count     = var.use_existing_resource_group ? 0 : 1
+    provider  = azurerm.gateways
+    name      = var.gateway_resource_group
+    location  = var.gateway_region
 
     lifecycle {
     ignore_changes = all
@@ -25,7 +19,7 @@ resource "azurerm_resource_group" "gateway_resource_group" {
 
 
 resource "azurerm_public_ip" "transit_gateway_vip" {
-  provider            = azurerm.aviatrix-gateways
+  provider            = azurerm.gateways
   name                = format("%s-vip", var.gateway_name)
   resource_group_name = var.use_existing_resource_group ? var.gateway_resource_group : azurerm_resource_group.gateway_resource_group[0].name
   location            = var.gateway_region
@@ -48,7 +42,7 @@ resource "azurerm_public_ip" "transit_gateway_vip" {
 
 resource "azurerm_public_ip" "transit_gateway_ha_vip" {  
   count               = var.ha_enabled ? 1 : 0
-  provider            = azurerm.aviatrix-gateways
+  provider            = azurerm.gateways
   name                = format("%s-hagw-vip", var.gateway_name)
   resource_group_name = var.use_existing_resource_group ? var.gateway_resource_group : azurerm_resource_group.gateway_resource_group[0].name
   location            = var.gateway_region
@@ -70,7 +64,7 @@ resource "azurerm_public_ip" "transit_gateway_ha_vip" {
 }
 
 resource "azurerm_network_security_rule" "avx_controller_allow_gw" {
-  provider                    = azurerm.aviatrix-controller
+  provider                    = azurerm.controller
   name                        = format("azure-avx-%sgw", var.gateway_name)
   resource_group_name         = var.controller_nsg_resource_group_name
   network_security_group_name = var.controller_nsg_name
